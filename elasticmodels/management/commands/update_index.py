@@ -65,6 +65,22 @@ class Command(BaseCommand):
                         self.stdout.write("Putting mapping for %s" % str(index))
                         index.put_mapping()
 
-                        qs = index.get_queryset(start=start, end=end)
-                        self.stdout.write("Indexing %d %s objects" % (qs.count(), model.__name__))
-                        index.update(qs.iterator())
+                        # This batch indexing ONLY works reliably on models where the PK is an autoincrementing number
+                        # TODO, make this more intelligent
+                        qs = index.get_queryset(start=start, end=end).order_by("pk")
+                        count = qs.count()
+                        last_pk = None
+                        batch_size = 500
+                        i = 0
+                        while True:
+                            if last_pk is None:
+                                batch = list(qs[0:batch_size])
+                            else:
+                                batch = list(qs.filter(pk__gt=last_pk)[:batch_size])
+
+                            if len(batch) == 0:
+                                break
+                            self.stdout.write("Indexing %d of %d %s objects" % (batch_size*(i+1), count, model.__name__))
+                            index.update(batch)
+                            last_pk = batch[-1].pk
+                            i += 1
