@@ -13,4 +13,6 @@ def update_indexes(sender, **kwargs):
 @receiver(post_delete)
 def delete_from_indexes(sender, **kwargs):
     instance = kwargs['instance']
-    registry.delete(instance)
+    # if a delete fails because it can't be found in the index, we don't really
+    # care, hence raise_on_error=False
+    registry.delete(instance, raise_on_error=False)
