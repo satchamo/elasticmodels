@@ -177,5 +177,7 @@ class Pageable:
         to_return = []
         for result in results:
             if result.meta.id in pk_to_model:
-                to_return.append(pk_to_model[result.meta.id])
+                model = pk_to_model[result.meta.id]
+                model.es_result = result
+                to_return.append(model)
         return to_return
